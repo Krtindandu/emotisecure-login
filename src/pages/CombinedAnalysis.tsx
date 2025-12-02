@@ -200,9 +200,7 @@ const CombinedAnalysis = () => {
                 Video Input
               </h3>
               <div className="relative aspect-video bg-muted rounded-xl overflow-hidden mb-4">
-                {isCameraOn ? (
-                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                ) : (
+                {!isCameraOn && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
                       <Video className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
@@ -210,6 +208,13 @@ const CombinedAnalysis = () => {
                     </div>
                   </div>
                 )}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-cover ${isCameraOn ? "" : "hidden"}`}
+                />
               </div>
               <Button variant={isCameraOn ? "destructive" : "secondary"} onClick={isCameraOn ? stopCamera : startCamera} className="w-full">
                 {isCameraOn ? (
