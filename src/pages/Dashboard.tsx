@@ -77,6 +77,7 @@ const Dashboard = () => {
             <div 
               className="group p-8 rounded-2xl bg-card border border-border/50 card-shadow hover:border-primary/50 transition-all duration-300 cursor-pointer animate-fade-up"
               style={{ animationDelay: "0.1s" }}
+              onClick={() => navigate("/text-analysis")}
             >
               <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
                 <MessageSquare className="w-7 h-7" />
@@ -85,7 +86,7 @@ const Dashboard = () => {
                 Text Emotion Analysis
               </h2>
               <p className="text-muted-foreground mb-6">
-                Analyze emotions from text inputs using advanced NLP. Detect sentiment, mood, and emotional tone in written content.
+                Analyze emotions from text inputs using advanced AI. Detect sentiment, mood, and emotional tone in written content.
               </p>
               <Button variant="gradient" className="w-full">
                 Start Text Analysis
@@ -96,6 +97,7 @@ const Dashboard = () => {
             <div 
               className="group p-8 rounded-2xl bg-card border border-border/50 card-shadow hover:border-primary/50 transition-all duration-300 cursor-pointer animate-fade-up"
               style={{ animationDelay: "0.2s" }}
+              onClick={() => navigate("/video-analysis")}
             >
               <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
                 <Video className="w-7 h-7" />
