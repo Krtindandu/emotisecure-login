@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,24 +27,24 @@ const CombinedAnalysis = () => {
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [text, setText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [textResults, setTextResults] = useState<EmotionData | null>(null);
   const [videoResults, setVideoResults] = useState<EmotionData | null>(null);
 
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: 640, height: 480 },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        streamRef.current = mediaStream;
+        setIsCameraOn(true);
       }
-      setStream(mediaStream);
-      setIsCameraOn(true);
       toast({ title: "Camera started", description: "Camera is ready for capture." });
     } catch (error) {
       toast({
@@ -53,15 +53,24 @@ const CombinedAnalysis = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
     setIsCameraOn(false);
-  }, [stream]);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   const captureFrame = (): string | null => {
     if (!videoRef.current || !canvasRef.current) return null;
