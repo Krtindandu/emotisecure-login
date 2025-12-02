@@ -1,8 +1,20 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Brain, Scan, MessageSquare, Video } from "lucide-react";
 import AuthForm from "@/components/AuthForm";
 import FloatingShapes from "@/components/FloatingShapes";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/dashboard");
+    }
+  }, [user, loading, navigate]);
+
   return (
     <div className="min-h-screen flex dark">
       {/* Left Panel - Branding */}
