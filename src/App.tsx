@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import TextAnalysis from "./pages/TextAnalysis";
 import VideoAnalysis from "./pages/VideoAnalysis";
+import CombinedAnalysis from "./pages/CombinedAnalysis";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/text-analysis" element={<TextAnalysis />} />
             <Route path="/video-analysis" element={<VideoAnalysis />} />
+            <Route path="/combined-analysis" element={<CombinedAnalysis />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

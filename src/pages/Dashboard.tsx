@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Brain, MessageSquare, Video, LogOut, Loader2 } from "lucide-react";
+import { Brain, MessageSquare, Video, LogOut, Loader2, Layers } from "lucide-react";
 import FloatingShapes from "@/components/FloatingShapes";
 
 const Dashboard = () => {
@@ -72,7 +72,7 @@ const Dashboard = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {/* Text Analysis Card */}
             <div 
               className="group p-8 rounded-2xl bg-card border border-border/50 card-shadow hover:border-primary/50 transition-all duration-300 cursor-pointer animate-fade-up"
@@ -83,13 +83,13 @@ const Dashboard = () => {
                 <MessageSquare className="w-7 h-7" />
               </div>
               <h2 className="text-xl font-display font-semibold text-foreground mb-3">
-                Text Emotion Analysis
+                Text Analysis
               </h2>
-              <p className="text-muted-foreground mb-6">
-                Analyze emotions from text inputs using advanced AI. Detect sentiment, mood, and emotional tone in written content.
+              <p className="text-muted-foreground mb-6 text-sm">
+                Analyze emotions from text using advanced AI sentiment detection.
               </p>
               <Button variant="gradient" className="w-full">
-                Start Text Analysis
+                Start
               </Button>
             </div>
 
@@ -103,13 +103,33 @@ const Dashboard = () => {
                 <Video className="w-7 h-7" />
               </div>
               <h2 className="text-xl font-display font-semibold text-foreground mb-3">
-                Video Emotion Detection
+                Video Analysis
               </h2>
-              <p className="text-muted-foreground mb-6">
-                Real-time facial emotion recognition from video. Detect expressions and emotions through your camera feed.
+              <p className="text-muted-foreground mb-6 text-sm">
+                Real-time facial emotion recognition through your camera.
               </p>
               <Button variant="gradient" className="w-full">
-                Start Video Analysis
+                Start
+              </Button>
+            </div>
+
+            {/* Combined Analysis Card */}
+            <div 
+              className="group p-8 rounded-2xl bg-card border border-border/50 card-shadow hover:border-primary/50 transition-all duration-300 cursor-pointer animate-fade-up"
+              style={{ animationDelay: "0.3s" }}
+              onClick={() => navigate("/combined-analysis")}
+            >
+              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
+                <Layers className="w-7 h-7" />
+              </div>
+              <h2 className="text-xl font-display font-semibold text-foreground mb-3">
+                Combined Analysis
+              </h2>
+              <p className="text-muted-foreground mb-6 text-sm">
+                Run text and video emotion analysis simultaneously.
+              </p>
+              <Button variant="gradient" className="w-full">
+                Start
               </Button>
             </div>
           </div>
