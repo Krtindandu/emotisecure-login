@@ -1,19 +1,92 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Brain, MessageSquare, Video, LogOut, Loader2, Layers } from "lucide-react";
+import { Brain, MessageSquare, Video, LogOut, Loader2, Layers, History, Trash2 } from "lucide-react";
 import FloatingShapes from "@/components/FloatingShapes";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+
+interface AnalysisRecord {
+  id: string;
+  analysis_type: "text" | "video" | "combined";
+  dominant_emotion: string;
+  confidence: number;
+  created_at: string;
+  input_text: string | null;
+}
+
+interface AnalysisCounts {
+  text: number;
+  video: number;
+  combined: number;
+  total: number;
+}
 
 const Dashboard = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [history, setHistory] = useState<AnalysisRecord[]>([]);
+  const [counts, setCounts] = useState<AnalysisCounts>({ text: 0, video: 0, combined: 0, total: 0 });
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchHistory();
+    }
+  }, [user]);
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from("emotion_analyses")
+        .select("id, analysis_type, dominant_emotion, confidence, created_at, input_text")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      setHistory(data || []);
+
+      // Calculate counts
+      const { data: allData, error: countError } = await supabase
+        .from("emotion_analyses")
+        .select("analysis_type");
+
+      if (!countError && allData) {
+        const textCount = allData.filter(r => r.analysis_type === "text").length;
+        const videoCount = allData.filter(r => r.analysis_type === "video").length;
+        const combinedCount = allData.filter(r => r.analysis_type === "combined").length;
+        setCounts({
+          text: textCount,
+          video: videoCount,
+          combined: combinedCount,
+          total: allData.length,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const deleteAnalysis = async (id: string) => {
+    try {
+      const { error } = await supabase.from("emotion_analyses").delete().eq("id", id);
+      if (error) throw error;
+      fetchHistory();
+    } catch (error) {
+      console.error("Failed to delete:", error);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -31,6 +104,15 @@ const Dashboard = () => {
   if (!user) {
     return null;
   }
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "text": return <MessageSquare className="w-4 h-4" />;
+      case "video": return <Video className="w-4 h-4" />;
+      case "combined": return <Layers className="w-4 h-4" />;
+      default: return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background dark">
@@ -140,22 +222,83 @@ const Dashboard = () => {
             style={{ animationDelay: "0.3s" }}
           >
             <h3 className="text-lg font-display font-semibold text-foreground mb-4">
-              Your Analysis History
+              Your Analysis Summary
             </h3>
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-4 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold gradient-text">0</p>
-                <p className="text-sm text-muted-foreground">Text Analyses</p>
+                <p className="text-2xl font-bold gradient-text">{counts.text}</p>
+                <p className="text-sm text-muted-foreground">Text</p>
               </div>
               <div>
-                <p className="text-2xl font-bold gradient-text">0</p>
-                <p className="text-sm text-muted-foreground">Video Sessions</p>
+                <p className="text-2xl font-bold gradient-text">{counts.video}</p>
+                <p className="text-sm text-muted-foreground">Video</p>
               </div>
               <div>
-                <p className="text-2xl font-bold gradient-text">0</p>
-                <p className="text-sm text-muted-foreground">Total Detections</p>
+                <p className="text-2xl font-bold gradient-text">{counts.combined}</p>
+                <p className="text-sm text-muted-foreground">Combined</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold gradient-text">{counts.total}</p>
+                <p className="text-sm text-muted-foreground">Total</p>
               </div>
             </div>
+          </div>
+
+          {/* History Section */}
+          <div 
+            className="mt-8 p-6 rounded-2xl bg-card/50 border border-border/50 animate-fade-up"
+            style={{ animationDelay: "0.4s" }}
+          >
+            <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Recent Analysis History
+            </h3>
+            
+            {loadingHistory ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : history.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                No analyses yet. Start analyzing to see your history here.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {history.map((record) => (
+                  <div
+                    key={record.id}
+                    className="flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/30"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        {getTypeIcon(record.analysis_type)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground capitalize">
+                          {record.dominant_emotion}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {record.analysis_type} • {Math.round(record.confidence)}% confidence
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-muted-foreground">
+                        {format(new Date(record.created_at), "MMM d, h:mm a")}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteAnalysis(record.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
