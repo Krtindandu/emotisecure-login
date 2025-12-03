@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEmotionHistory } from "@/hooks/useEmotionHistory";
 import { Brain, ArrowLeft, Camera, CameraOff, Loader2, RefreshCw } from "lucide-react";
 import FloatingShapes from "@/components/FloatingShapes";
 import EmotionResults from "@/components/EmotionResults";
@@ -24,6 +25,7 @@ const VideoAnalysis = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { saveAnalysis } = useEmotionHistory();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -93,6 +95,7 @@ const VideoAnalysis = () => {
       if (error) throw error;
 
       setResults(data);
+      await saveAnalysis("video", data);
       toast({
         title: "Analysis complete",
         description: `Detected primary emotion: ${data.dominant_emotion}`,

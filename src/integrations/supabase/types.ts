@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      emotion_analyses: {
+        Row: {
+          analysis_type: Database["public"]["Enums"]["analysis_type"]
+          confidence: number
+          created_at: string
+          dominant_emotion: string
+          emotions: Json
+          id: string
+          input_text: string | null
+          mixed_emotions: string[] | null
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          analysis_type: Database["public"]["Enums"]["analysis_type"]
+          confidence: number
+          created_at?: string
+          dominant_emotion: string
+          emotions: Json
+          id?: string
+          input_text?: string | null
+          mixed_emotions?: string[] | null
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          analysis_type?: Database["public"]["Enums"]["analysis_type"]
+          confidence?: number
+          created_at?: string
+          dominant_emotion?: string
+          emotions?: Json
+          id?: string
+          input_text?: string | null
+          mixed_emotions?: string[] | null
+          summary?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +61,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      analysis_type: "text" | "video" | "combined"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +188,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      analysis_type: ["text", "video", "combined"],
+    },
   },
 } as const

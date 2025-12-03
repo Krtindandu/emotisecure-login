@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEmotionHistory } from "@/hooks/useEmotionHistory";
 import { Brain, ArrowLeft, Play, Loader2, Camera, Video, VideoOff } from "lucide-react";
 import FloatingShapes from "@/components/FloatingShapes";
 import EmotionResults from "@/components/EmotionResults";
@@ -25,6 +26,7 @@ const CombinedAnalysis = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { saveAnalysis } = useEmotionHistory();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -105,9 +107,10 @@ const CombinedAnalysis = () => {
       promises.push(
         supabase.functions
           .invoke("analyze-emotion", { body: { type: "text", text: text.trim() } })
-          .then(({ data, error }) => {
+          .then(async ({ data, error }) => {
             if (error) throw error;
             setTextResults(data);
+            await saveAnalysis("combined", data, text.trim());
           })
           .catch((error) => {
             console.error("Text analysis error:", error);
@@ -123,9 +126,10 @@ const CombinedAnalysis = () => {
         promises.push(
           supabase.functions
             .invoke("analyze-emotion", { body: { type: "image", imageBase64 } })
-            .then(({ data, error }) => {
+            .then(async ({ data, error }) => {
               if (error) throw error;
               setVideoResults(data);
+              await saveAnalysis("combined", data);
             })
             .catch((error) => {
               console.error("Video analysis error:", error);

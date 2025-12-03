@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEmotionHistory } from "@/hooks/useEmotionHistory";
 import { Brain, ArrowLeft, Send, Loader2 } from "lucide-react";
 import FloatingShapes from "@/components/FloatingShapes";
 import EmotionResults from "@/components/EmotionResults";
@@ -25,6 +26,7 @@ const TextAnalysis = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { saveAnalysis } = useEmotionHistory();
   const [text, setText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<EmotionData | null>(null);
@@ -50,6 +52,7 @@ const TextAnalysis = () => {
       if (error) throw error;
 
       setResults(data);
+      await saveAnalysis("text", data, text.trim());
       toast({
         title: "Analysis complete",
         description: `Detected primary emotion: ${data.dominant_emotion}`,
