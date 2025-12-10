@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEmotionHistory } from "@/hooks/useEmotionHistory";
-import { Brain, ArrowLeft, Camera, CameraOff, Loader2, RefreshCw } from "lucide-react";
+import { useImageEmotionModel } from "@/hooks/useImageEmotionModel";
+import { Brain, ArrowLeft, Camera, CameraOff, Loader2, RefreshCw, Download } from "lucide-react";
 import FloatingShapes from "@/components/FloatingShapes";
 import EmotionResults from "@/components/EmotionResults";
-import { supabase } from "@/integrations/supabase/client";
+import ModelLoadingProgress from "@/components/ModelLoadingProgress";
 
 interface EmotionData {
   emotions: Array<{
@@ -26,6 +27,8 @@ const VideoAnalysis = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { saveAnalysis } = useEmotionHistory();
+  const { loadModel, analyzeImage, isLoading: isModelLoading, modelReady, loadingProgress } = useImageEmotionModel();
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -34,6 +37,13 @@ const VideoAnalysis = () => {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<EmotionData | null>(null);
+
+  // Load model on mount
+  useEffect(() => {
+    loadModel().catch(error => {
+      console.error("Failed to preload model:", error);
+    });
+  }, [loadModel]);
 
   const startCamera = useCallback(async () => {
     try {
@@ -86,13 +96,8 @@ const VideoAnalysis = () => {
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0);
 
-      const imageBase64 = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
-
-      const { data, error } = await supabase.functions.invoke("analyze-emotion", {
-        body: { type: "image", imageBase64 },
-      });
-
-      if (error) throw error;
+      // Use the canvas directly for analysis
+      const data = await analyzeImage(canvas);
 
       setResults(data);
       await saveAnalysis("video", data);
@@ -110,7 +115,7 @@ const VideoAnalysis = () => {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [toast]);
+  }, [analyzeImage, saveAnalysis, toast]);
 
   useEffect(() => {
     return () => {
@@ -154,9 +159,40 @@ const VideoAnalysis = () => {
               <span className="gradient-text">Video Emotion</span> Detection
             </h1>
             <p className="text-lg text-muted-foreground">
-              Use your camera to detect facial emotions in real-time
+              Powered by Vision Transformer (ViT) - runs locally in your browser
             </p>
           </div>
+
+          {/* Model Loading Progress */}
+          {isModelLoading && (
+            <div className="mb-6">
+              <ModelLoadingProgress 
+                modelName="Vision Transformer (ViT)" 
+                progress={loadingProgress} 
+                isLoading={isModelLoading} 
+              />
+            </div>
+          )}
+
+          {/* Model Status */}
+          {!isModelLoading && (
+            <div className="mb-6 p-4 rounded-xl bg-card border border-border/50 animate-fade-up">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${modelReady ? "bg-green-500" : "bg-yellow-500"} animate-pulse`} />
+                <span className="text-sm text-muted-foreground">
+                  {modelReady 
+                    ? "Vision Transformer model loaded - Ready for local inference" 
+                    : "Model not loaded - Click analyze to load"}
+                </span>
+                {!modelReady && (
+                  <Button variant="outline" size="sm" onClick={() => loadModel()}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Load Model
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Camera Section */}
           <div
@@ -211,7 +247,7 @@ const VideoAnalysis = () => {
                   <Button
                     variant="gradient"
                     onClick={captureAndAnalyze}
-                    disabled={isAnalyzing}
+                    disabled={isAnalyzing || isModelLoading}
                   >
                     {isAnalyzing ? (
                       <>

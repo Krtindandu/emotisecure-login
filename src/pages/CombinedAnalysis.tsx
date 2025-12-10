@@ -5,10 +5,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEmotionHistory } from "@/hooks/useEmotionHistory";
-import { Brain, ArrowLeft, Play, Loader2, Camera, Video, VideoOff } from "lucide-react";
+import { useTextEmotionModel } from "@/hooks/useTextEmotionModel";
+import { useImageEmotionModel } from "@/hooks/useImageEmotionModel";
+import { Brain, ArrowLeft, Play, Loader2, Camera, Video, VideoOff, Download } from "lucide-react";
 import FloatingShapes from "@/components/FloatingShapes";
 import EmotionResults from "@/components/EmotionResults";
-import { supabase } from "@/integrations/supabase/client";
+import ModelLoadingProgress from "@/components/ModelLoadingProgress";
 
 interface EmotionData {
   emotions: Array<{
@@ -27,6 +29,23 @@ const CombinedAnalysis = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { saveAnalysis } = useEmotionHistory();
+  
+  const { 
+    loadModel: loadTextModel, 
+    analyzeText, 
+    isLoading: isTextModelLoading, 
+    modelReady: textModelReady, 
+    loadingProgress: textLoadingProgress 
+  } = useTextEmotionModel();
+  
+  const { 
+    loadModel: loadImageModel, 
+    analyzeImage, 
+    isLoading: isImageModelLoading, 
+    modelReady: imageModelReady, 
+    loadingProgress: imageLoadingProgress 
+  } = useImageEmotionModel();
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -36,6 +55,17 @@ const CombinedAnalysis = () => {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [textResults, setTextResults] = useState<EmotionData | null>(null);
   const [videoResults, setVideoResults] = useState<EmotionData | null>(null);
+
+  const isAnyModelLoading = isTextModelLoading || isImageModelLoading;
+  const allModelsReady = textModelReady && imageModelReady;
+
+  // Load models on mount
+  useEffect(() => {
+    Promise.all([
+      loadTextModel().catch(e => console.error("Text model load error:", e)),
+      loadImageModel().catch(e => console.error("Image model load error:", e))
+    ]);
+  }, [loadTextModel, loadImageModel]);
 
   const startCamera = useCallback(async () => {
     try {
@@ -74,18 +104,6 @@ const CombinedAnalysis = () => {
     };
   }, [stopCamera]);
 
-  const captureFrame = (): string | null => {
-    if (!videoRef.current || !canvasRef.current) return null;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
-  };
-
   const handleCombinedAnalysis = async () => {
     if (!text.trim() && !isCameraOn) {
       toast({
@@ -105,36 +123,41 @@ const CombinedAnalysis = () => {
     // Text analysis
     if (text.trim()) {
       promises.push(
-        supabase.functions
-          .invoke("analyze-emotion", { body: { type: "text", text: text.trim() } })
-          .then(async ({ data, error }) => {
-            if (error) throw error;
+        (async () => {
+          try {
+            const data = await analyzeText(text.trim());
             setTextResults(data);
             await saveAnalysis("combined", data, text.trim());
-          })
-          .catch((error) => {
+          } catch (error: any) {
             console.error("Text analysis error:", error);
             toast({ title: "Text analysis failed", description: error.message, variant: "destructive" });
-          })
+          }
+        })()
       );
     }
 
     // Video analysis
-    if (isCameraOn) {
-      const imageBase64 = captureFrame();
-      if (imageBase64) {
+    if (isCameraOn && canvasRef.current && videoRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      
+      if (ctx) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        
         promises.push(
-          supabase.functions
-            .invoke("analyze-emotion", { body: { type: "image", imageBase64 } })
-            .then(async ({ data, error }) => {
-              if (error) throw error;
+          (async () => {
+            try {
+              const data = await analyzeImage(canvas);
               setVideoResults(data);
               await saveAnalysis("combined", data);
-            })
-            .catch((error) => {
+            } catch (error: any) {
               console.error("Video analysis error:", error);
               toast({ title: "Video analysis failed", description: error.message, variant: "destructive" });
-            })
+            }
+          })()
         );
       }
     }
@@ -174,9 +197,62 @@ const CombinedAnalysis = () => {
               <span className="gradient-text">Combined</span> Emotion Analysis
             </h1>
             <p className="text-lg text-muted-foreground">
-              Analyze text and facial expressions simultaneously for comprehensive results
+              Powered by DistilRoBERTa & Vision Transformer - runs locally in your browser
             </p>
           </div>
+
+          {/* Model Loading Progress */}
+          {isAnyModelLoading && (
+            <div className="space-y-4 mb-6">
+              {isTextModelLoading && (
+                <ModelLoadingProgress 
+                  modelName="DistilRoBERTa (Text)" 
+                  progress={textLoadingProgress} 
+                  isLoading={isTextModelLoading} 
+                />
+              )}
+              {isImageModelLoading && (
+                <ModelLoadingProgress 
+                  modelName="Vision Transformer (Video)" 
+                  progress={imageLoadingProgress} 
+                  isLoading={isImageModelLoading} 
+                />
+              )}
+            </div>
+          )}
+
+          {/* Model Status */}
+          {!isAnyModelLoading && (
+            <div className="mb-6 p-4 rounded-xl bg-card border border-border/50 animate-fade-up">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${textModelReady ? "bg-green-500" : "bg-yellow-500"} animate-pulse`} />
+                  <span className="text-sm text-muted-foreground">
+                    {textModelReady ? "Text model ready" : "Text model not loaded"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${imageModelReady ? "bg-green-500" : "bg-yellow-500"} animate-pulse`} />
+                  <span className="text-sm text-muted-foreground">
+                    {imageModelReady ? "Video model ready" : "Video model not loaded"}
+                  </span>
+                </div>
+                {!allModelsReady && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      if (!textModelReady) loadTextModel();
+                      if (!imageModelReady) loadImageModel();
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Load Models
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Input Section */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -240,7 +316,7 @@ const CombinedAnalysis = () => {
               variant="gradient"
               size="lg"
               onClick={handleCombinedAnalysis}
-              disabled={isAnalyzing || (!text.trim() && !isCameraOn)}
+              disabled={isAnalyzing || isAnyModelLoading || (!text.trim() && !isCameraOn)}
               className="px-8"
             >
               {isAnalyzing ? (
