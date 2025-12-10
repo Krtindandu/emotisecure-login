@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEmotionHistory } from "@/hooks/useEmotionHistory";
-import { Brain, ArrowLeft, Send, Loader2 } from "lucide-react";
+import { useTextEmotionModel } from "@/hooks/useTextEmotionModel";
+import { Brain, ArrowLeft, Send, Loader2, Download } from "lucide-react";
 import FloatingShapes from "@/components/FloatingShapes";
 import EmotionResults from "@/components/EmotionResults";
-import { supabase } from "@/integrations/supabase/client";
+import ModelLoadingProgress from "@/components/ModelLoadingProgress";
 
 interface EmotionData {
   emotions: Array<{
@@ -27,9 +28,18 @@ const TextAnalysis = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { saveAnalysis } = useEmotionHistory();
+  const { loadModel, analyzeText, isLoading: isModelLoading, modelReady, loadingProgress } = useTextEmotionModel();
+  
   const [text, setText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<EmotionData | null>(null);
+
+  // Load model on mount
+  useEffect(() => {
+    loadModel().catch(error => {
+      console.error("Failed to preload model:", error);
+    });
+  }, [loadModel]);
 
   const handleAnalyze = async () => {
     if (!text.trim()) {
@@ -45,12 +55,7 @@ const TextAnalysis = () => {
     setResults(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("analyze-emotion", {
-        body: { type: "text", text: text.trim() },
-      });
-
-      if (error) throw error;
-
+      const data = await analyzeText(text.trim());
       setResults(data);
       await saveAnalysis("text", data, text.trim());
       toast({
@@ -105,9 +110,40 @@ const TextAnalysis = () => {
               <span className="gradient-text">Text Emotion</span> Analysis
             </h1>
             <p className="text-lg text-muted-foreground">
-              Enter text below to detect emotions, sentiment, and emotional tone
+              Powered by DistilRoBERTa - runs locally in your browser
             </p>
           </div>
+
+          {/* Model Loading Progress */}
+          {isModelLoading && (
+            <div className="mb-6">
+              <ModelLoadingProgress 
+                modelName="DistilRoBERTa" 
+                progress={loadingProgress} 
+                isLoading={isModelLoading} 
+              />
+            </div>
+          )}
+
+          {/* Model Status */}
+          {!isModelLoading && (
+            <div className="mb-6 p-4 rounded-xl bg-card border border-border/50 animate-fade-up">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${modelReady ? "bg-green-500" : "bg-yellow-500"} animate-pulse`} />
+                <span className="text-sm text-muted-foreground">
+                  {modelReady 
+                    ? "DistilRoBERTa model loaded - Ready for local inference" 
+                    : "Model not loaded - Click analyze to load"}
+                </span>
+                {!modelReady && (
+                  <Button variant="outline" size="sm" onClick={() => loadModel()}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Load Model
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Input Section */}
           <div
@@ -127,7 +163,7 @@ const TextAnalysis = () => {
               <Button
                 variant="gradient"
                 onClick={handleAnalyze}
-                disabled={isAnalyzing || !text.trim()}
+                disabled={isAnalyzing || isModelLoading || !text.trim()}
               >
                 {isAnalyzing ? (
                   <>
