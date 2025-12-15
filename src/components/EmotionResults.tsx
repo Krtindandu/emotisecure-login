@@ -19,10 +19,8 @@ const emotionColors: Record<string, string> = {
   Sad: "bg-blue-500",
   Angry: "bg-red-500",
   Surprised: "bg-purple-500",
-  Fearful: "bg-orange-500",
   Disgusted: "bg-green-600",
   Neutral: "bg-gray-500",
-  Contempt: "bg-pink-500",
 };
 
 const intensityLabels = {
