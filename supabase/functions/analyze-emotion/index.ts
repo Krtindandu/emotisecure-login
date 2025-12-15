@@ -16,10 +16,8 @@ Return ONLY a valid JSON object with this exact structure:
     {"name": "Sad", "score": 0.0, "intensity": "low|medium|high"},
     {"name": "Angry", "score": 0.0, "intensity": "low|medium|high"},
     {"name": "Surprised", "score": 0.0, "intensity": "low|medium|high"},
-    {"name": "Fearful", "score": 0.0, "intensity": "low|medium|high"},
     {"name": "Disgusted", "score": 0.0, "intensity": "low|medium|high"},
-    {"name": "Neutral", "score": 0.0, "intensity": "low|medium|high"},
-    {"name": "Contempt", "score": 0.0, "intensity": "low|medium|high"}
+    {"name": "Neutral", "score": 0.0, "intensity": "low|medium|high"}
   ],
   "dominant_emotion": "string",
   "mixed_emotions": ["string"],
@@ -47,9 +45,7 @@ EMOTION INDICATORS:
 - Sad: Inner eyebrow raise, lip corners down, chin dimpling
 - Angry: Eyebrows lowered/together, lips pressed, glaring eyes, flared nostrils
 - Surprised: Raised eyebrows, wide eyes, dropped jaw, horizontal forehead lines
-- Fearful: Raised inner eyebrows, wide eyes, tense lower eyelids, open mouth
 - Disgusted: Wrinkled nose, raised upper lip, lowered eyebrows
-- Contempt: One-sided lip corner raise (asymmetric), slight head tilt
 - Neutral: Relaxed facial muscles, no significant expression markers
 
 Return ONLY a valid JSON object with this exact structure:
@@ -59,10 +55,8 @@ Return ONLY a valid JSON object with this exact structure:
     {"name": "Sad", "score": 0.0, "intensity": "low|medium|high"},
     {"name": "Angry", "score": 0.0, "intensity": "low|medium|high"},
     {"name": "Surprised", "score": 0.0, "intensity": "low|medium|high"},
-    {"name": "Fearful", "score": 0.0, "intensity": "low|medium|high"},
     {"name": "Disgusted", "score": 0.0, "intensity": "low|medium|high"},
-    {"name": "Neutral", "score": 0.0, "intensity": "low|medium|high"},
-    {"name": "Contempt", "score": 0.0, "intensity": "low|medium|high"}
+    {"name": "Neutral", "score": 0.0, "intensity": "low|medium|high"}
   ],
   "dominant_emotion": "string",
   "mixed_emotions": ["string"],

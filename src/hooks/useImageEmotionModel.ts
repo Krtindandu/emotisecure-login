@@ -21,10 +21,8 @@ const EMOTION_MAP: Record<string, string> = {
   sad: "Sad",
   angry: "Angry",
   surprise: "Surprised",
-  fear: "Fearful",
   disgust: "Disgusted",
   neutral: "Neutral",
-  contempt: "Contempt",
 };
 
 const getIntensity = (score: number): "low" | "medium" | "high" => {
@@ -112,7 +110,7 @@ export const useImageEmotionModel = () => {
     const results = await classifierRef.current(imageInput, { top_k: 7 });
 
     // Process results into our format
-    const allEmotions = ["Happy", "Sad", "Angry", "Surprised", "Fearful", "Disgusted", "Neutral", "Contempt"];
+    const allEmotions = ["Happy", "Sad", "Angry", "Surprised", "Disgusted", "Neutral"];
     const emotionScores: Record<string, number> = {};
 
     // Initialize all emotions with 0
